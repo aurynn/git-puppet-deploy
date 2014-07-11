@@ -18,7 +18,8 @@ if [ -f $DEPLOY/Gemfile ]; then
 fi
 
 # Run puppet on the work directory, now
+# This should be a passwordless sudo, as per our deployment bootstrap.
 
-sudo puppet apply --modulepath $DEPLOY/puppet/modules \
+sudo /usr/bin/puppet apply --modulepath $DEPLOY/puppet/modules \
     --hiera_config=$DEPLOY/checkout/puppet/hiera.conf \
     $DEPLOY/checkout/puppet/site.pp
