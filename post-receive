@@ -1,0 +1,24 @@
+#!/bin/sh
+
+DEPLOY=/var/deploy/checkout
+
+export GIT_WORK_TREE=/var/deploy/checkout
+git checkout -f master
+unset GIT_WORK_TREE
+# Always blast the work tree and check out back to an empty branch before continuing.
+# This is done to squelch the "you can't push zomg" errors.
+git reset --hard HEAD
+git checkout empty
+
+# Is there a rakefile? If so, this puppet module probably needs some custom
+# gems. Let's install them.
+
+if [ -f $DEPLOY/Gemfile ]; then
+    /usr/bin/gem install -g $DEPLOY/Gemfile
+fi
+
+# Run puppet on the work directory, now
+
+sudo puppet apply --modulepath $DEPLOY/puppet/modules \
+    --hiera_config=$DEPLOY/checkout/puppet/hiera.conf \
+    $DEPLOY/checkout/puppet/site.pp
