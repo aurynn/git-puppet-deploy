@@ -81,6 +81,7 @@ augeas {"deploy-sudoers":
         'set spec[user = "deploy"]/user deploy',
         'set spec[user = "deploy"]/host_group/host ALL',
         'set spec[user = "deploy"]/host_group/command puppet',
+        'set spec[user = "deploy"]/host_group/command gem',
         'set spec[user = "deploy"]/host_group/command/runas_user root',
         'set spec[user = "deploy"]/host_group/command/tag NOPASSWD'
     ]
