@@ -22,4 +22,4 @@ fi
 
 sudo /usr/bin/puppet apply --modulepath $DEPLOY/puppet/modules \
     --hiera_config=$DEPLOY/checkout/puppet/hiera.conf \
-    $DEPLOY/checkout/puppet/site.pp
+    $DEPLOY/checkout/puppet/base.pp

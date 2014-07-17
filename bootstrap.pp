@@ -44,8 +44,18 @@ package {"git":
 user {"deploy":
     managehome => "true",
     groups     => ["deploy"],
-    home       => "/var/deploy",
+    home       => $deploy_base,
     shell      => "/usr/sbin/nologin"
+}
+
+file {"${deploy_base}/.ssh":
+    ensure => directory,
+    mode   => "0700"
+}
+
+file {"${deploy_base}/.ssh/authorized_keys":
+    mode    => "0600",
+    content => file("${checkout_dir}/deploy.rsa.pub")
 }
 
 group {"deploy":
