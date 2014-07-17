@@ -1,2 +1,4 @@
 *.sw*
 deploy.rsa
+.vagrant
+bootstrap.sh

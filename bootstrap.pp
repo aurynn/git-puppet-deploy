@@ -64,23 +64,26 @@ group {"deploy":
 
 # Create the receiving git repository
 exec{"git-init":
-    command => "git init ${deploy_path}",
-    creates => "${deploy_path}/.git",
+    command => "git init ${deploy_repo}",
+    creates => "${deploy_repo}/.git",
 }
 
 # Branch it, checking out into an always-empty branch
 exec {"git-branch":
     command => "git checkout -b empty",
-    cwd     => $deploy_path
+    cwd     => $deploy_repo
 }
 
 # Add our post-receive hook. This performs the on-push checkout and 
 # puppet apply.
 
+notice("${deploy_repo}/.git/hooks/post-receive")
+notice("${::checkout_dir}/post-receive")
+
 file {"post-receive":
-    path   => "${deploy_path}/.git/hooks/post-receive",
-    source => file("${::checkout_dir}/post-receive"),
-    mode   => "0755"
+    path    => "${deploy_repo}/.git/hooks/post-receive",
+    content => file("${::checkout_dir}/post-receive"),
+    mode    => "0755"
 }
 
 # Give the deploy user puppet powers. but only puppet powers.
