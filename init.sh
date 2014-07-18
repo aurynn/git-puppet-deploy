@@ -13,7 +13,7 @@ if [ ! $? ]; then
         wget https://apt.puppetlabs.com/puppetlabs-release-`lsb_release -cs`.deb
     fi
     dpkg -i /var/deploy/init/puppetlabs-release-`lsb_release -cs`.deb
-    apt-get update
+    apt-get update 2> /dev/null
 fi
 
 # this will always be the puppetlabs version, now.
@@ -21,10 +21,10 @@ fi
 dpkg-query -W puppet 2> /dev/null
 if [ ! $? ]; then
     echo "attempting to install Puppet"
-    apt-get install -y puppet
+    apt-get install -y puppet 2> /dev/null
 fi
 
 echo "Upgrading."
-apt-get -y upgrade
+apt-get -y upgrade 2> /dev/null
 
 FACTER_checkout_dir=$DIR puppet apply $DIR/bootstrap.pp
