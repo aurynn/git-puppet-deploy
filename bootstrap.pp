@@ -45,7 +45,7 @@ user {"deploy":
     managehome => "true",
     groups     => ["deploy"],
     home       => $deploy_base,
-    shell      => "/usr/sbin/nologin"
+    shell      => "/bin/bash"
 }
 
 file {"${deploy_base}/.ssh":
@@ -69,9 +69,15 @@ exec{"git-init":
 }
 
 # Branch it, checking out into an always-empty branch
-exec {"git-branch":
-    command => "git checkout -b empty",
-    cwd     => $deploy_repo
+exec {"git-branch-create":
+    command => "git branch empty",
+    cwd     => $deploy_repo,
+    creates => "${deploy_repo}/.git/logs/refs/heads/empty"
+}
+
+exec {"git-branch-checkout":
+    command => "git checkout empty",
+    cwd     => $deploy_repo,
 }
 
 # Add our post-receive hook. This performs the on-push checkout and 
@@ -87,16 +93,34 @@ file {"post-receive":
 }
 
 # Give the deploy user puppet powers. but only puppet powers.
+
+augeas { "sudoers-puppet-cmd":
+    context => "/files/etc/sudoers.d/deploy",
+    changes => [
+        "set Cmnd_Alias[alias/name = 'SERVICES']/alias/name SERVICES",
+        "set Cmnd_Alias[alias/name = 'SERVICES']/alias/command[1] /usr/bin/gem",
+        "set Cmnd_Alias[alias/name = 'SERVICES']/alias/command[2] /usr/bin/puppet",
+    ]
+} 
+
+augeas { "sudoers-defaults-notty":
+    context => "/files/etc/sudoers.d/deploy",
+    changes => [
+        'set Defaults[type=":deploy"]/type ":deploy"',
+        'set Defaults[type=":deploy"]/requiretty/negate ""'
+    ]
+} 
+
+# 
 augeas {"deploy-sudoers":
-    context => "/file/etc/sudoers",
+    context => "/files/etc/sudoers.d/deploy",
     changes => [
         # allow wheel users to use sudo
         'set spec[user = "deploy"]/user deploy',
         'set spec[user = "deploy"]/host_group/host ALL',
-        'set spec[user = "deploy"]/host_group/command puppet',
-        'set spec[user = "deploy"]/host_group/command gem',
+        'set spec[user = "deploy"]/host_group/command SERVICES',
         'set spec[user = "deploy"]/host_group/command/runas_user root',
-        'set spec[user = "deploy"]/host_group/command/tag NOPASSWD'
+        'set spec[user = "deploy"]/host_group/command/tag NOPASSWD',
     ]
 }
 
@@ -107,13 +131,18 @@ Group["deploy"] -> User["deploy"] -> File <| |>
 User["deploy"] -> Exec <| |>
 
 Package["git"] -> Exec["git-init"]
-Package["git"] -> Exec["git-branch"]
+Package["git"] -> Exec["git-branch-create"]
+Package["git"] -> Exec["git-branch-checkout"]
 
 # git-branch will be notified when git-init happens.
 # This should, therefore, only ever happen once.
-Exec["git-init"] ~> Exec["git-branch"]
+Exec["git-init"] ~> Exec["git-branch-create"] -> Exec["git-branch-checkout"]
 
 # We need the repo directory to exist before we init it.
 File[$deploy_repo] -> Exec["git-init"]
 
-User["deploy"] -> Augeas["deploy-sudoers"]
+# Augeas stuff.
+User["deploy"] -> 
+Augeas["sudoers-puppet-cmd"] ->
+Augeas["sudoers-defaults-notty"] ->
+Augeas["deploy-sudoers"]
